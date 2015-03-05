@@ -46,7 +46,7 @@ Sentinel.prototype.createClient = function(masterName, opts) {
         self.pubsub.push(pubsubClient);
     }
     return this.createClientInternal(masterName, opts);
-}
+};
 
 Sentinel.prototype.createClientInternal = function(masterName, opts) {
     if (typeof masterName !== 'string') {
@@ -56,25 +56,34 @@ Sentinel.prototype.createClientInternal = function(masterName, opts) {
 
     opts = opts || {};
     var role = opts.role || 'master';
+    var sentinel_managed = opts.sentinel_managed !== false;
+    delete opts['sentinel_managed'];
 
     var endpoints = this.endpoints;
 
 
     var netClient = new net.Socket();
     var client = new redis.RedisClient(netClient, opts);
-    this.clients.push(client);
 
     var self = this;
 
-    client.on('end', function() {
-        // if we're purposefully ending, forget us
-        if (this.closing) {
-            var index = self.clients.indexOf(this);
-            if (index !== -1) {
-                self.clients.splice(index, 1);
+    if (sentinel_managed) {
+        this.clients.push(client);
+        client.on('end', function() {
+            // if we're purposefully ending, forget us
+            if (this.closing) {
+                var index = self.clients.indexOf(this);
+                if (index !== -1) {
+                    self.clients.splice(index, 1);
+                }
             }
-        }
-    });
+        });
+    }
+
+    // clients who call end() won't trigger an end event (node-redis forcibly clears the event
+    // observers from the underlying stream on client.end()); we need to regularly filter for
+    // closing connections, and this is a reasonable place
+    this.clients = this.clients.filter(function(client) { return !client.closing; });
 
     function connectClient(resolver) {
         return function(err, host, port) {

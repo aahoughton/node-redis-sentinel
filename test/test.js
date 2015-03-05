@@ -223,5 +223,32 @@ describe('Redis Sentinel tests', function() {
                 });
             });
         });
+
+        it('should not manage unmanaged clients', function (done) {
+            var endpoints = [{host: '127.0.0.1', port: 26380}];
+            var instance = sentinel.Sentinel(endpoints);
+            var redisClient1 = instance.createClient('mymaster');
+            redisClient1.on('ready', function () {
+                // one pubsub, one actual
+                expect(instance.clients.length).to.equal(2);
+
+                var redisClient2 = instance.createClient('mymaster', {sentinel_managed: false});
+                redisClient2.on('ready', function () {
+                    expect(instance.clients.length).to.equal(2);
+
+                    redisClient1.info(function(err, info) {
+                        expect(err).to.be.null;
+                        expect(info).to.be.ok;
+
+                        redisClient2.info(function(err, info) {
+                            expect(err).to.be.null;
+                            expect(info).to.be.ok;
+
+                            done();
+                        });
+                    });
+                });
+            });
+        });
     });
 });

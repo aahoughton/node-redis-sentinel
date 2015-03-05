@@ -41,6 +41,26 @@ var sentinelClient = sentinel.createClient(endpoints, {role: 'sentinel'});
 
 Where you should also transparently get a reconnection to a new slave/sentinel if the existing one goes down.
 
+## Connection Management ##
+
+By default node-redis-sentinel will attempt to reconnect any existing redis clients when a failover is
+detected. In some cases you'll want to manage your own connection lifetime and tell node-redis-sentinel
+not to maintain a reference to the redis client -- you can pass explicitly set the 'sentinel_managed'
+option to false when creating a client:
+
+```javascript
+var sentinel = require('redis-sentinel');
+
+var endpoints = [
+    {host: '127.0.0.1', port: 26379},
+    {host: '127.0.0.1', port: 26380}
+];
+var masterName = 'mymaster';
+
+var Sentinel = sentinel.Sentinel(endpoints);
+var masterClient = Sentinel.createClient(masterName, {sentinel_managed: false});
+```
+
 ## TODO ##
 * We could probably be cleverer with reconnects etc. and there may be issues with the error handling
 
