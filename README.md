@@ -45,7 +45,7 @@ Where you should also transparently get a reconnection to a new slave/sentinel i
 
 By default node-redis-sentinel will attempt to reconnect any existing redis clients when a failover is
 detected. In some cases you'll want to manage your own connection lifetime and tell node-redis-sentinel
-not to maintain a reference to the redis client -- you can pass explicitly set the 'sentinel_managed'
+not to maintain a reference to the redis client -- you can explicitly set the 'sentinel_managed'
 option to false when creating a client:
 
 ```javascript
